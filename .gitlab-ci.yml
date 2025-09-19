@@ -1,0 +1,19 @@
+stages:
+  - build
+  - push
+
+variables:
+  IMAGE_NAME: surajmanedymo/my_react_app
+  IMAGE_TAG: latest   # you can use $CI_COMMIT_SHORT_SHA for unique tags
+
+build-image:
+  stage: build
+  image: docker:24.0.5
+  services:
+    - docker:24.0.5-dind
+  script:
+    - docker build -t $IMAGE_NAME:$IMAGE_TAG .
+    - docker login -u "$DOCKERHUB_USERNAME" -p "$DOCKERHUB_PASSWORD"
+    - docker push $IMAGE_NAME:$IMAGE_TAG
+  only:
+    - main   # runs only when pushing to main branch

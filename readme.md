@@ -246,3 +246,135 @@ build
 
 Do you want me to also show you how to **automatically build and push your Docker image to Docker Hub** when you push this code to GitHub (using GitHub Actions CI/CD)?
 
+Ah ✅ classic **non-fast-forward error** — happens when your local branch is behind GitHub’s branch (maybe GitHub already has a README, license, or some commits).
+
+You have **two safe ways** to fix it:
+
+---
+
+### 🔹 Option 1: Merge remote into local (recommended if remote has important commits like README)
+
+```bash
+git pull origin main --rebase
+git push origin main
+```
+
+* `pull --rebase` brings remote commits (like README) into your local branch.
+* Then push works fine.
+
+---
+
+### 🔹 Option 2: Force push (⚠️ overwrites remote history)
+
+If you want to **replace GitHub content** completely with your local project:
+
+```bash
+git push origin main --force
+```
+
+⚠️ This deletes whatever was in the GitHub repo before. Use this only if you’re sure.
+
+---
+
+### ✅ Best Practice for your case
+
+Since you just created the repo and maybe GitHub auto-added a README or `.gitignore`, I suggest:
+
+```bash
+git pull origin main --rebase
+git push origin main
+```
+
+---
+
+👉 Do you want me to give you a **one-time cleanup command sequence** that ensures your **local project completely overwrites GitHub** (fresh repo state)?
+
+
+
+Perfect 🚀 You want a **CI/CD pipeline** with GitLab CI that:
+
+1. Builds a Docker image when you push code.
+2. Pushes that image to **Docker Hub**.
+
+Here’s a step-by-step guide:
+
+---
+
+## 🔹 Steps
+
+### 1. Create a Repo in GitLab
+
+* Your project is already in GitLab ✅
+
+### 2. Create a Docker Hub Repository
+
+* Go to [Docker Hub](https://hub.docker.com/) → Create a repo, e.g. `your-dockerhub-username/myapp`.
+
+### 3. Store Docker Hub Credentials in GitLab
+
+1. Go to your project → **Settings > CI/CD > Variables**.
+2. Add the following:
+
+   * `DOCKERHUB_USERNAME` → your Docker Hub username
+   * `DOCKERHUB_PASSWORD` → your Docker Hub password or access token
+
+👉 Mark them as **protected** if you only want them in protected branches (like `main`).
+
+### 4. Add a `.gitlab-ci.yml` File to Your Project
+
+Create `.gitlab-ci.yml` at the root of your repo:
+
+```yaml
+stages:
+  - build
+  - push
+
+variables:
+  IMAGE_NAME: your-dockerhub-username/myapp
+  IMAGE_TAG: latest   # you can use $CI_COMMIT_SHORT_SHA for unique tags
+
+build-image:
+  stage: build
+  image: docker:24.0.5
+  services:
+    - docker:24.0.5-dind
+  script:
+    - docker build -t $IMAGE_NAME:$IMAGE_TAG .
+    - docker login -u "$DOCKERHUB_USERNAME" -p "$DOCKERHUB_PASSWORD"
+    - docker push $IMAGE_NAME:$IMAGE_TAG
+  only:
+    - main   # runs only when pushing to main branch
+```
+
+---
+
+### 5. Push Code to GitLab
+
+When you push to the `main` branch:
+
+* GitLab Runner will build the Docker image.
+* Log in to Docker Hub.
+* Push the image as `your-dockerhub-username/myapp:latest`.
+
+---
+
+### 6. Verify
+
+Run this on your machine:
+
+```bash
+docker pull your-dockerhub-username/myapp:latest
+docker run -it your-dockerhub-username/myapp:latest
+```
+
+---
+
+✅ Done!
+Now, every push to `main` automatically updates your Docker Hub image.
+
+---
+
+⚡ Question for you: do you want to **push images with version tags** (like `v1.0.0`, `commit SHA`, etc.) or just always `latest`?
+
+
+
